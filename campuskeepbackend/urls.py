@@ -19,10 +19,14 @@ from django.urls import path
 from campuskeepbackend import views
 
 urlpatterns = [
+
     path('admin/', admin.site.urls),
 
     path('users/login/', views.loginUser),
     path('users/info/', views.userInfo),
 
-    path('items/', views.item_list)
+    path('items/', views.item_list),
+    path('itemsByCategory/', views.items_by_category)
+
+
 ]

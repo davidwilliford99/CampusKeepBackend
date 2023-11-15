@@ -12,38 +12,52 @@ import datetime
 
 
 
+#
+# Creating new users 
+#
+@api_view(['POST'])
+def create_user(request):
+    if request.method == 'POST':
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+
+            username = serializer.validated_data['username']
+            email = serializer.validated_data['email']
+
+            # checking for duplicate usernames and emails
+            if User.objects.filter(username=username).exists():
+                return Response({'error': 'Username is already taken.'}, status=status.HTTP_400_BAD_REQUEST)
+            elif User.objects.filter(email=email).exists():
+                return Response({'error': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response({'error': 'Bad Payload'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 #
 # Logs in user 
-#
-# Checks for valid email and password, and returns jwt
-# Session automatically expires after 2 hours
 #
 @api_view(['POST'])
 @csrf_exempt
 def loginUser(request):
     if request.method == 'POST':
         
-        # Get the request data as a dictionary
         data = json.loads(request.body)
         email = data.get('email')
         password = data.get('password')
         
         print(email + " " + password)
-
-        # find user by email in request payload
         user = User.objects.filter(email=email).first()
         
-        # if user not found
         if user is None:
             return JsonResponse({'message': 'Invalid email'})
-        
-        # checking password match, check_passwords checks hashed passwords
         if not user.check_password(password):
             return JsonResponse({'message': 'Incorrect Password'})
-        
-        # creating jwt token
+
         payload = {
             'id': user.id,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=120),
@@ -51,14 +65,9 @@ def loginUser(request):
         }
         token = jwt.encode(payload, 'BGCcret', algorithm='HS256')  # second param is secret key for hashing
     
-        
-        # if succesful login 
+        # if succesful
         print("Login Successful")
-        
-        # returning jwt token
-        # frontend will store token into localstorage
         return JsonResponse({'jwt': token})
-        
             
     else:
         return JsonResponse({'message': 'Invalid authentication request'}, status=405)
@@ -67,9 +76,7 @@ def loginUser(request):
 
 
 #
-# User sends their jwt 
-#
-# Response contains all of their user info
+# Gets user info using jwt
 #
 @api_view(['POST'])
 @csrf_exempt
@@ -77,21 +84,16 @@ def userInfo(request):
     
     if request.method == 'POST':
     
-        # pull token from cookies 
         data = json.loads(request.body)
         token = data.get('jwt')
-        
-        # checks for jwt token (credentials)
+
         if not token:
             return JsonResponse({'message': 'You are not signed in'}) 
-
-        # decode jwt
         try:
             payload = jwt.decode(token, 'BGCcret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
             return JsonResponse({'message': 'Invalid web token'}) 
-        
-        # get user data and profile data using id within token
+
         user = User.objects.filter(id=payload['id']).first()
         user_serializer = UserSerializer(user)
         
@@ -99,9 +101,7 @@ def userInfo(request):
 
 
 
-#
-# Gets all Items (all fields)
-#
+
 @api_view(['GET', 'POST'])
 @csrf_exempt
 def item_list(request, format=None):
@@ -120,4 +120,16 @@ def item_list(request, format=None):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return JsonResponse({"message": "Invalid payload"})
-        
+    
+
+
+@api_view(['Post'])
+@csrf_exempt
+def items_by_category(request, format=None):
+
+    if request.method == 'POST':
+        # pull category field from incoming request 
+        data = json.loads(request.body)
+        categoryInput = data.get('category')
+        items_in_category = Item.objects.filter(category=categoryInput)
+        return JsonResponse(items_in_category)
