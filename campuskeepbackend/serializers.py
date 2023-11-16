@@ -10,3 +10,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'password', 'is_staff']
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'from_user', 'to_user', 'content', 'time_sent']
+
+class ClaimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Claim
+        fields = ['id', 'claimed_by', 'finder', 'claim_date', 'item_id']

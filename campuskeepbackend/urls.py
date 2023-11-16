@@ -24,9 +24,13 @@ urlpatterns = [
 
     path('users/login/', views.loginUser),
     path('users/info/', views.userInfo),
+    path('getUsername/', views.getUsername),
 
     path('items/', views.item_list),
-    path('itemsByCategory/', views.items_by_category)
+    path('itemsByCategory/', views.items_by_category),
 
+    path('getMessages/', views.getMessages),
+    path('newMessage/', views.newMessage),
+    path('getConversation/', views.getConversation),
 
 ]

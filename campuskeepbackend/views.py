@@ -1,11 +1,12 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
-from .serializers import UserSerializer, ItemSerializer
+from .serializers import UserSerializer, ItemSerializer, MessageSerializer
 from .models import Item, Message, Claim
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.db.models import Q
 import json
 import jwt 
 import datetime
@@ -101,6 +102,21 @@ def userInfo(request):
 
 
 
+@api_view(['POST'])
+@csrf_exempt
+def getUsername(request):
+
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = User.objects.get(pk=user_id)
+        return JsonResponse({'username': user.username}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
 
 @api_view(['GET', 'POST'])
 @csrf_exempt
@@ -123,7 +139,7 @@ def item_list(request, format=None):
     
 
 
-@api_view(['Post'])
+@api_view(['POST'])
 @csrf_exempt
 def items_by_category(request, format=None):
 
@@ -131,5 +147,57 @@ def items_by_category(request, format=None):
         # pull category field from incoming request 
         data = json.loads(request.body)
         categoryInput = data.get('category')
-        items_in_category = Item.objects.filter(category=categoryInput)
-        return JsonResponse(items_in_category)
+        items = Item.objects.filter(category=categoryInput)
+        serializer = ItemSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+
+@api_view(['POST'])
+@csrf_exempt
+def newMessage(request, format=None):
+    serializer = MessageSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
+@csrf_exempt
+def getMessages(request, format=None):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        userId = data.get('user_id')
+
+        # find messages to and from the userID
+        # Order by 'time_sent' in descending order
+        messages = Message.objects.filter(
+            Q(from_user_id=userId) | Q(to_user_id=userId)
+        ).order_by('-time_sent')  
+
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
+
+#
+# Gets a conversation between 2 users
+#
+@api_view(['POST'])
+@csrf_exempt
+def getConversation(request, format=None):
+    from_user = request.data.get('from_user')
+    to_user = request.data.get('to_user')
+
+    if not all([from_user, to_user]):
+        return Response({"error": "Both user IDs are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    messages = Message.objects.filter(
+        Q(from_user=from_user, to_user=to_user) |
+        Q(from_user=to_user, to_user=from_user)
+    ).order_by('time_sent')
+
+    serializer = MessageSerializer(messages, many=True)
+    return Response(serializer.data)
