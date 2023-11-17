@@ -28,9 +28,12 @@ urlpatterns = [
 
     path('items/', views.item_list),
     path('itemsByCategory/', views.items_by_category),
+    path('itemsByFinder/', views.items_by_finder),
 
     path('getMessages/', views.getMessages),
     path('newMessage/', views.newMessage),
     path('getConversation/', views.getConversation),
+
+    path('claims/', views.claim_list),
 
 ]

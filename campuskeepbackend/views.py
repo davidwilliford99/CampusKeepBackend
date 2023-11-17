@@ -1,6 +1,6 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
-from .serializers import UserSerializer, ItemSerializer, MessageSerializer
+from .serializers import UserSerializer, ItemSerializer, MessageSerializer, ClaimSerializer
 from .models import Item, Message, Claim
 from django.contrib.auth.models import User
 from django.http import JsonResponse
@@ -111,7 +111,7 @@ def getUsername(request):
         return JsonResponse({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         user = User.objects.get(pk=user_id)
-        return JsonResponse({'username': user.username}, status=status.HTTP_200_OK)
+        return JsonResponse({'username': user.username, 'email': user.email}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -148,6 +148,19 @@ def items_by_category(request, format=None):
         data = json.loads(request.body)
         categoryInput = data.get('category')
         items = Item.objects.filter(category=categoryInput)
+        serializer = ItemSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+@api_view(['POST'])
+@csrf_exempt
+def items_by_finder(request, format=None):
+
+    if request.method == 'POST':
+        # pull category field from incoming request 
+        data = json.loads(request.body)
+        found_by = data.get('found_by')
+        items = Item.objects.filter(found_by=found_by)
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data)
 
@@ -201,3 +214,47 @@ def getConversation(request, format=None):
 
     serializer = MessageSerializer(messages, many=True)
     return Response(serializer.data)
+
+
+
+#
+# Adding and Getting Claims
+#
+@api_view(['GET', 'POST', 'PUT'])
+@csrf_exempt
+def claim_list(request, format=None):
+
+    # getting all claims
+    if request.method == "GET":
+        claims = Claim.objects.all()
+        serializer = ClaimSerializer(claims, many=True)
+        return Response(serializer.data)
+
+    # storing new claims
+    if request.method == "POST":
+        serializer = ClaimSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return JsonResponse({"message": "Invalid payload"})
+
+    # Updating an existing claim
+    elif request.method == 'PUT':
+        
+        data = json.loads(request.body)
+        claimId = data.get('id')
+
+        try:
+            claim = Claim.objects.get(id=claimId)
+        except Claim.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ClaimSerializer(claim, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+

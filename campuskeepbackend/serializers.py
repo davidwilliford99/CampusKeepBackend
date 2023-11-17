@@ -19,4 +19,4 @@ class MessageSerializer(serializers.ModelSerializer):
 class ClaimSerializer(serializers.ModelSerializer):
     class Meta:
         model = Claim
-        fields = ['id', 'claimed_by', 'finder', 'claim_date', 'item_id']
+        fields = ['id', 'claimed_by', 'finder', 'claim_date', 'item_id', 'answer1', 'answer2', 'answer3', 'is_valid']

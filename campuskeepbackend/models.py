@@ -39,6 +39,11 @@ class Claim(models.Model):
     finder = models.ForeignKey(User, on_delete=models.CASCADE, related_name='items_found')
     claim_date = models.DateTimeField(auto_now_add=True)
     item_id = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='claims')
+    answer1 = models.TextField(null=True)
+    answer2 = models.TextField(null=True)
+    answer3 = models.TextField(null=True)
+    is_valid = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Item {self.item_id.id} claimed by {self.claimed_by.username} on {self.claim_date}"
+        return f"Item {self.item_id.id} claimed by {self.claimed_by.username}"
+    
