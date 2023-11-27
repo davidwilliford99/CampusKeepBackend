@@ -33,7 +33,8 @@ urlpatterns = [
     path('getMessages/', views.getMessages),
     path('newMessage/', views.newMessage),
     path('getConversation/', views.getConversation),
+    path('getConversationList/', views.getConversationList),
 
     path('claims/', views.claim_list),
-
+    
 ]

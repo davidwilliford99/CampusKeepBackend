@@ -195,6 +195,7 @@ def getMessages(request, format=None):
 
 
 
+
 #
 # Gets a conversation between 2 users
 #
@@ -214,6 +215,43 @@ def getConversation(request, format=None):
 
     serializer = MessageSerializer(messages, many=True)
     return Response(serializer.data)
+
+
+#
+# Gets a list of all conversations for a user 
+#
+@api_view(['POST'])
+@csrf_exempt
+def getConversationList(request, format=None):
+    try:
+        user_id = request.data.get('user')
+        
+        # Ensure user_id is provided and valid
+        if not user_id:
+            return JsonResponse({"error": "User ID is required."}, status=400)
+        try:
+            user_id = int(user_id)
+            User.objects.get(pk=user_id)
+        except (ValueError, User.DoesNotExist):
+            return JsonResponse({"error": "Invalid User ID."}, status=400)
+
+        # Query for messages where the user is either the sender or the receiver
+        conversations = Message.objects.filter(Q(from_user_id=user_id) | Q(to_user_id=user_id))
+
+        # Get unique user IDs
+        user_ids = set()
+        for message in conversations:
+            user_ids.add(message.from_user_id)
+            user_ids.add(message.to_user_id)
+
+        # Remove the user's own ID from the set
+        user_ids.discard(user_id)
+
+        # Convert user IDs to list and return as JSON
+        return JsonResponse({"users": list(user_ids)})
+    except Exception as e:
+        # Handle unexpected errors
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 
@@ -256,5 +294,6 @@ def claim_list(request, format=None):
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
