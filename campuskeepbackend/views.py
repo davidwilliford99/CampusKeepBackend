@@ -1,6 +1,7 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from .serializers import UserSerializer, ItemSerializer, MessageSerializer, ClaimSerializer
+from django.core.exceptions import ObjectDoesNotExist
 from .models import Item, Message, Claim
 from django.contrib.auth.models import User
 from django.http import JsonResponse
@@ -296,4 +297,62 @@ def claim_list(request, format=None):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+#
+# Endpoint for when claims are approved
+#
+@api_view(['POST'])
+@csrf_exempt
+def verifyClaim(request):
+    try:
+        claim_id = request.data.get('claim_id')
+        
+        # Ensure claim_id is provided
+        if not claim_id:
+            return JsonResponse({"error": "Claim ID is required."}, status=400)
 
+        try:
+            # Retrieve the claim and update its status
+            claim = Claim.objects.get(pk=claim_id)
+            claim.is_valid = True
+            claim.save()
+
+            # Update the associated item's status
+            item = claim.item_id
+            item.is_found = True
+            item.save()
+
+            return JsonResponse({"success": "Claim and Item status updated."})
+        except ObjectDoesNotExist:
+            return JsonResponse({"error": "Claim not found."}, status=404)
+    except Exception as e:
+        # Handle unexpected errors
+        return JsonResponse({"error": str(e)}, status=500)
+    
+
+
+#
+# Deleting a claim when it is denied by admin 
+#
+@api_view(['POST'])
+@csrf_exempt
+def denyClaim(request):
+    try:
+        claim_id = request.data.get('claim_id')
+        
+        # Ensure claim_id is provided
+        if not claim_id:
+            return JsonResponse({"error": "Claim ID is required."}, status=400)
+
+        try:
+            # Retrieve the claim
+            claim = Claim.objects.get(pk=claim_id)
+
+            # Delete the claim
+            claim.delete()
+
+            return JsonResponse({"success": "Claim successfully deleted."})
+        except ObjectDoesNotExist:
+            return JsonResponse({"error": "Claim not found."}, status=404)
+    except Exception as e:
+        # Handle unexpected errors
+        return JsonResponse({"error": str(e)}, status=500)

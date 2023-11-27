@@ -36,5 +36,7 @@ urlpatterns = [
     path('getConversationList/', views.getConversationList),
 
     path('claims/', views.claim_list),
+    path('verifyClaim/', views.verifyClaim),
+    path('denyClaim/', views.denyClaim),
     
 ]
