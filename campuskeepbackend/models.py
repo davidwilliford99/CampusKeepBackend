@@ -15,6 +15,7 @@ class Item(models.Model):
     answer3 = models.TextField()
     date_found = models.DateField()
     found_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_found = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
