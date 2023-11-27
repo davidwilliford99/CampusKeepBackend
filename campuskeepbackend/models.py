@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 class Item(models.Model):
     name = models.CharField(max_length=100)
     category = models.TextField()
+    description = models.TextField(null=True)
     question1 = models.TextField()
     answer1 = models.TextField()
     question2 = models.TextField()
@@ -39,7 +40,6 @@ class Claim(models.Model):
     claimed_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='claims_made')
     finder = models.ForeignKey(User, on_delete=models.CASCADE, related_name='items_found')
     claim_date = models.DateTimeField(auto_now_add=True)
-    description = models.TextField(null=True)
     item_id = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='claims')
     answer1 = models.TextField(null=True)
     answer2 = models.TextField(null=True)
