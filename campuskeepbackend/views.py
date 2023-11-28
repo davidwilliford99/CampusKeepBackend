@@ -2,11 +2,13 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from .serializers import UserSerializer, ItemSerializer, MessageSerializer, ClaimSerializer
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.hashers import make_password
 from .models import Item, Message, Claim
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import json
 import jwt 
@@ -19,24 +21,30 @@ import datetime
 #
 @api_view(['POST'])
 def create_user(request):
-    if request.method == 'POST':
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
+    try:
+        # Assuming the data is sent as JSON
+        data = json.loads(request.body)
 
-            username = serializer.validated_data['username']
-            email = serializer.validated_data['email']
+        # Extracting user data
+        username = data.get('username')
+        email = data.get('email')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        password = data.get('password')
 
-            # checking for duplicate usernames and emails
-            if User.objects.filter(username=username).exists():
-                return Response({'error': 'Username is already taken.'}, status=status.HTTP_400_BAD_REQUEST)
-            elif User.objects.filter(email=email).exists():
-                return Response({'error': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Creating the user
+        user = User.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password=make_password(password)  # Hash the password
+        )
 
-            else:
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        return Response({'error': 'Bad Payload'}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message': 'User created successfully'}, status=201)
+
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
 
 
 
@@ -137,7 +145,19 @@ def item_list(request, format=None):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return JsonResponse({"message": "Invalid payload"})
-    
+
+
+
+
+@api_view(['POST'])
+@csrf_exempt
+def item_by_id(request, format=None):
+    item_id = request.data.get('item_id')
+    item = get_object_or_404(Item, pk=item_id)
+    serializer = ItemSerializer(item)
+    return Response(serializer.data)
+
+
 
 
 @api_view(['POST'])
@@ -151,6 +171,8 @@ def items_by_category(request, format=None):
         items = Item.objects.filter(category=categoryInput)
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data)
+
+
 
 
 @api_view(['POST'])
@@ -167,6 +189,7 @@ def items_by_finder(request, format=None):
 
 
 
+
 @api_view(['POST'])
 @csrf_exempt
 def newMessage(request, format=None):
@@ -175,6 +198,7 @@ def newMessage(request, format=None):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 

@@ -25,10 +25,12 @@ urlpatterns = [
     path('users/login/', views.loginUser),
     path('users/info/', views.userInfo),
     path('getUsername/', views.getUsername),
+    path('createUser/', views.create_user),
 
     path('items/', views.item_list),
     path('itemsByCategory/', views.items_by_category),
     path('itemsByFinder/', views.items_by_finder),
+    path('itemById/', views.item_by_id),
 
     path('getMessages/', views.getMessages),
     path('newMessage/', views.newMessage),
