@@ -77,7 +77,7 @@ def loginUser(request):
     
         # if succesful
         print("Login Successful")
-        return JsonResponse({'jwt': token})
+        return JsonResponse({'jwt': token, 'message': 'Login Successful'})
             
     else:
         return JsonResponse({'message': 'Invalid authentication request'}, status=405)
